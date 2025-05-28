@@ -303,7 +303,7 @@
             gap: 12px;
         }
 
-        /* Correction importante pour l'alignement des messages */
+        /* Messages */
         .message {
             max-width: 70%;
             padding: 12px 16px;
@@ -319,7 +319,6 @@
             to { transform: translateY(0); opacity: 1; }
         }
 
-        /* Vos messages - alignés à droite */
         .message.sent {
             align-self: flex-end;
             margin-left: auto;
@@ -328,7 +327,6 @@
             color: white;
         }
 
-        /* Messages reçus - alignés à gauche */
         .message.received {
             align-self: flex-start;
             margin-left: 0;
@@ -336,6 +334,62 @@
             background: white;
             color: #333;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Messages vocaux */
+        .voice-message {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 200px;
+            padding: 8px 12px;
+        }
+
+        .voice-play-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .message.received .voice-play-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .voice-play-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .message.received .voice-play-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .voice-waveform {
+            flex: 1;
+            height: 30px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .message.received .voice-waveform {
+            background: #f0f0f0;
+        }
+
+        .voice-duration {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            min-width: 35px;
         }
 
         .message-info {
@@ -360,26 +414,70 @@
             25%, 75% { opacity: 0.5; }
         }
 
+        /* Barre de saisie améliorée */
         .message-input-container {
             padding: 1rem;
             background: white;
             border-top: 1px solid #e1e5e9;
             display: flex;
             gap: 12px;
+            align-items: flex-end;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
         }
 
         .message-input {
-            flex: 1;
-            padding: 12px 16px;
+            width: 100%;
+            padding: 12px 50px 12px 16px;
             border: 2px solid #e1e5e9;
             border-radius: 25px;
             font-size: 1rem;
             outline: none;
             transition: border-color 0.3s;
+            resize: none;
+            min-height: 44px;
+            max-height: 120px;
         }
 
         .message-input:focus {
             border-color: #667eea;
+        }
+
+        .voice-record-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .voice-record-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .voice-record-btn.recording {
+            background: #f44336;
+            animation: recordPulse 1s infinite;
+        }
+
+        @keyframes recordPulse {
+            0%, 100% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-50%) scale(1.1); }
         }
 
         .send-btn {
@@ -390,10 +488,74 @@
             border-radius: 25px;
             cursor: pointer;
             transition: transform 0.2s;
+            min-height: 44px;
         }
 
         .send-btn:hover {
             transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Enregistrement vocal */
+        .voice-recording-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 2rem;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            z-index: 1000;
+        }
+
+        .recording-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .recording-timer {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #f44336;
+        }
+
+        .recording-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s;
+        }
+
+        .stop-recording-btn {
+            background: #f44336;
+            color: white;
+        }
+
+        .cancel-recording-btn {
+            background: #666;
+            color: white;
+        }
+
+        .send-recording-btn {
+            background: #4caf50;
+            color: white;
+        }
+
+        .recording-btn:hover {
+            transform: scale(1.1);
         }
 
         .welcome-screen {
@@ -530,9 +692,25 @@
             </div>
 
             <div class="message-input-container" id="messageInputContainer" style="display: none;">
-                <input type="text" class="message-input" id="messageInput" placeholder="Tapez votre message...">
+                <div class="input-wrapper">
+                    <textarea class="message-input" id="messageInput" placeholder="Tapez votre message..." rows="1"></textarea>
+                    <button class="voice-record-btn" id="voiceRecordBtn" onclick="toggleVoiceRecording()">🎤</button>
+                </div>
                 <button class="send-btn" onclick="sendMessage()">Envoyer</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Panel d'enregistrement vocal -->
+    <div id="voiceRecordingPanel" class="voice-recording-panel">
+        <div class="recording-controls">
+            <button class="recording-btn cancel-recording-btn" onclick="cancelVoiceRecording()">❌</button>
+            <div class="recording-timer" id="recordingTimer">00:00</div>
+            <button class="recording-btn stop-recording-btn" onclick="stopVoiceRecording()">⏹️</button>
+            <button class="recording-btn send-recording-btn" id="sendRecordingBtn" onclick="sendVoiceMessage()" style="display: none;">📤</button>
+        </div>
+        <div style="text-align: center; margin-top: 1rem;">
+            <p id="recordingStatus">Appuyez sur le bouton rouge pour arrêter l'enregistrement</p>
         </div>
     </div>
 
@@ -543,7 +721,15 @@
     let currentUser = null;
     let selectedUser = null;
     let messages = {};
-    let userContacts = []; // Liste des contacts de l'utilisateur
+    let userContacts = [];
+    
+    // Variables pour l'enregistrement vocal
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let recordingStartTime = null;
+    let recordingTimer = null;
+    let currentAudioBlob = null;
 
     // Montre le formulaire d'inscription
     function showRegister() {
@@ -573,7 +759,9 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, password })
-            });
+            </script>
+</body>
+</html>
 
             if (!res.ok) throw new Error("Inscription échouée");
 
@@ -617,6 +805,7 @@
         document.getElementById('mainApp').classList.remove('hidden');
         document.getElementById('currentUser').textContent = currentUser.name;
         loadUserContacts();
+        initVoiceRecording();
     }
 
     // Nouvelle fonction pour chercher un utilisateur
@@ -689,7 +878,7 @@
                 showMessage('searchMessage', `${userName} ajouté à vos contacts!`, 'success');
                 document.getElementById('searchResults').style.display = 'none';
                 document.getElementById('searchEmail').value = '';
-                loadUserContacts(); // Recharger la liste des contacts
+                loadUserContacts();
             } else {
                 showMessage('searchMessage', data.message || 'Erreur lors de l\'ajout', 'error');
             }
@@ -741,11 +930,11 @@
         });
 
         socket.on('user_online', () => {
-            loadUserContacts(); // Actualiser les statuts en ligne
+            loadUserContacts();
         });
         
         socket.on('user_offline', () => {
-            loadUserContacts(); // Actualiser les statuts en ligne
+            loadUserContacts();
         });
 
         socket.on('receive_message', (data) => {
@@ -778,11 +967,190 @@
         msgs.forEach(msg => {
             const div = document.createElement('div');
             div.className = `message ${msg.from === currentUser.id ? 'sent' : 'received'}`;
-            div.innerHTML = `<div>${msg.message}</div><div class="message-info">${new Date(msg.timestamp).toLocaleTimeString()}</div>`;
+            
+            if (msg.type === 'voice') {
+                div.innerHTML = `
+                    <div class="voice-message">
+                        <button class="voice-play-btn" onclick="playVoiceMessage('${msg.audioUrl}', this)">▶️</button>
+                        <div class="voice-waveform"></div>
+                        <span class="voice-duration">${msg.duration}s</span>
+                    </div>
+                    <div class="message-info">${new Date(msg.timestamp).toLocaleTimeString()}</div>
+                `;
+            } else {
+                div.innerHTML = `<div>${msg.message}</div><div class="message-info">${new Date(msg.timestamp).toLocaleTimeString()}</div>`;
+            }
             container.appendChild(div);
         });
         container.scrollTop = container.scrollHeight;
     }
+
+    // === FONCTIONS POUR LES MESSAGES VOCAUX ===
+
+    async function initVoiceRecording() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            // Arrêter le stream immédiatement après avoir obtenu la permission
+            stream.getTracks().forEach(track => track.stop());
+        } catch (err) {
+            console.error('Microphone non accessible:', err);
+            document.getElementById('voiceRecordBtn').style.display = 'none';
+        }
+    }
+
+    async function toggleVoiceRecording() {
+        if (isRecording) {
+            stopVoiceRecording();
+        } else {
+            startVoiceRecording();
+        }
+    }
+
+    async function startVoiceRecording() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+            
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                currentAudioBlob = audioBlob;
+                stream.getTracks().forEach(track => track.stop());
+                
+                // Afficher le bouton d'envoi
+                document.getElementById('sendRecordingBtn').style.display = 'block';
+                document.getElementById('recordingStatus').textContent = 'Enregistrement terminé. Cliquez sur 📤 pour envoyer ou ❌ pour annuler.';
+            };
+            
+            mediaRecorder.start();
+            isRecording = true;
+            recordingStartTime = Date.now();
+            
+            // Interface
+            document.getElementById('voiceRecordBtn').classList.add('recording');
+            document.getElementById('voiceRecordingPanel').style.display = 'flex';
+            document.getElementById('sendRecordingBtn').style.display = 'none';
+            
+            // Timer
+            startRecordingTimer();
+            
+        } catch (err) {
+            console.error('Erreur lors de l\'enregistrement:', err);
+            alert('Impossible d\'accéder au microphone');
+        }
+    }
+
+    function stopVoiceRecording() {
+        if (mediaRecorder && isRecording) {
+            mediaRecorder.stop();
+            isRecording = false;
+            clearInterval(recordingTimer);
+            document.getElementById('voiceRecordBtn').classList.remove('recording');
+        }
+    }
+
+    function cancelVoiceRecording() {
+        if (isRecording) {
+            stopVoiceRecording();
+        }
+        
+        // Nettoyer
+        currentAudioBlob = null;
+        document.getElementById('voiceRecordingPanel').style.display = 'none';
+        document.getElementById('voiceRecordBtn').classList.remove('recording');
+        clearInterval(recordingTimer);
+        
+        // Arrêter le stream si actif
+        if (mediaRecorder && mediaRecorder.stream) {
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+    }
+
+    function startRecordingTimer() {
+        recordingTimer = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('recordingTimer').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
+    }
+
+    async function sendVoiceMessage() {
+        if (!currentAudioBlob || !selectedUser) return;
+        
+        try {
+            // Calculer la durée approximative
+            const duration = Math.floor((Date.now() - recordingStartTime) / 1000);
+            
+            // Convertir en base64 pour l'envoi (simulation)
+            const reader = new FileReader();
+            reader.onload = function() {
+                const audioData = reader.result;
+                
+                // Simuler l'envoi (dans un vrai projet, vous uploaderiez vers un serveur)
+                const voiceMessage = {
+                    from: currentUser.id,
+                    to: selectedUser.id,
+                    type: 'voice',
+                    audioUrl: audioData, // Dans un vrai projet, ce serait l'URL du serveur
+                    duration: duration,
+                    timestamp: new Date()
+                };
+                
+                // Émettre via socket
+                socket.emit('send_message', voiceMessage);
+                
+                // Ajouter au messages locaux
+                const key = getChatKey(currentUser.id, selectedUser.id);
+                if (!messages[key]) messages[key] = [];
+                messages[key].push(voiceMessage);
+                displayMessages();
+                
+                // Nettoyer
+                cancelVoiceRecording();
+            };
+            reader.readAsDataURL(currentAudioBlob);
+            
+        } catch (err) {
+            console.error('Erreur lors de l\'envoi du message vocal:', err);
+            alert('Erreur lors de l\'envoi du message vocal');
+        }
+    }
+
+    function playVoiceMessage(audioUrl, button) {
+        try {
+            const audio = new Audio(audioUrl);
+            const originalText = button.textContent;
+            
+            button.textContent = '⏸️';
+            button.disabled = true;
+            
+            audio.onended = () => {
+                button.textContent = originalText;
+                button.disabled = false;
+            };
+            
+            audio.onerror = () => {
+                button.textContent = originalText;
+                button.disabled = false;
+                console.error('Erreur lors de la lecture audio');
+            };
+            
+            audio.play();
+            
+        } catch (err) {
+            console.error('Erreur lors de la lecture:', err);
+            button.textContent = '▶️';
+            button.disabled = false;
+        }
+    }
+
+    // === FIN DES FONCTIONS VOCALES ===
 
     function sendMessage() {
         const input = document.getElementById('messageInput');
@@ -792,10 +1160,12 @@
         socket.emit('send_message', {
             from: currentUser.id,
             to: selectedUser.id,
-            message: text
+            message: text,
+            type: 'text'
         });
 
         input.value = '';
+        input.style.height = 'auto';
     }
 
     function showError(id, msg) {
@@ -818,24 +1188,47 @@
         currentUser = null;
         selectedUser = null;
         userContacts = [];
+        
+        // Nettoyer l'enregistrement vocal
+        cancelVoiceRecording();
+        
         document.getElementById('authScreen').classList.remove('hidden');
         document.getElementById('mainApp').classList.add('hidden');
     }
 
-    // Permettre la recherche avec Enter
+    // Auto-resize du textarea
+    function autoResizeTextarea() {
+        const textarea = document.getElementById('messageInput');
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    }
+
+    // Event listeners
     document.addEventListener('DOMContentLoaded', function() {
+        const messageInput = document.getElementById('messageInput');
+        
+        // Recherche avec Enter
         document.getElementById('searchEmail').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 searchUser();
             }
         });
         
-        document.getElementById('messageInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
+        // Envoi de message avec Enter (Ctrl+Enter pour nouvelle ligne)
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.ctrlKey) {
+                e.preventDefault();
                 sendMessage();
             }
         });
+        
+        // Auto-resize du textarea
+        messageInput.addEventListener('input', autoResizeTextarea);
+        
+        // Fermer le panel d'enregistrement avec Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.getElementById('voiceRecordingPanel').style.display === 'flex') {
+                cancelVoiceRecording();
+            }
+        });
     });
-    </script>
-</body>
-</html>
