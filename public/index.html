@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebChat Connect</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Écran de connexion */
+        .auth-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .auth-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 400px;
+            max-width: 90vw;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .auth-card h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-bottom: 1rem;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .switch-auth {
+            text-align: center;
+            color: #666;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        /* Interface principale */
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #e1e5e9;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info {
+            font-weight: 500;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Section ajout d'utilisateur */
+        .add-user-section {
+            padding: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+            background: #f8f9fa;
+        }
+
+        .add-user-form {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .add-user-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .add-user-input:focus {
+            border-color: #667eea;
+        }
+
+        .add-user-btn {
+            padding: 8px 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+
+        .add-user-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .search-results {
+            max-height: 150px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .search-result-item {
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-result-item:hover {
+            background: #f8f9fa;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .add-contact-btn {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .add-contact-btn:hover {
+            background: #45a049;
+        }
+
+        .online-users {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .section-title {
+            padding: 1rem;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-item {
+            padding: 12px 1rem;
+            border-bottom: 1px solid #f8f9fa;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .user-item:hover {
+            background: #f8f9fa;
+        }
+
+        .user-item.active {
+            background: #e3f2fd;
+            border-left: 4px solid #667eea;
+        }
+
+        .online-indicator {
+            width: 8px;
+            height: 8px;
+            background: #4caf50;
+            border-radius: 50%;
+            margin-right: 12px;
+        }
+
+        .offline-indicator {
+            width: 8px;
+            height: 8px;
+            background: #ccc;
+            border-radius: 50%;
+            margin-right: 12px;
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+        }
+
+        .chat-header {
+            padding: 1rem;
+            background: white;
+            border-bottom: 1px solid #e1e5e9;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Correction importante pour l'alignement des messages */
+        .message {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            position: relative;
+            animation: messageIn 0.3s ease;
+            word-wrap: break-word;
+            clear: both;
+        }
+
+        @keyframes messageIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Vos messages - alignés à droite */
+        .message.sent {
+            align-self: flex-end;
+            margin-left: auto;
+            margin-right: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* Messages reçus - alignés à gauche */
+        .message.received {
+            align-self: flex-start;
+            margin-left: 0;
+            margin-right: auto;
+            background: white;
+            color: #333;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .message-info {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        .typing-indicator {
+            padding: 12px 16px;
+            background: white;
+            border-radius: 18px;
+            max-width: 200px;
+            font-style: italic;
+            color: #666;
+            animation: pulse 1.5s infinite;
+            align-self: flex-start;
+        }
+
+        @keyframes pulse {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0.5; }
+        }
+
+        .message-input-container {
+            padding: 1rem;
+            background: white;
+            border-top: 1px solid #e1e5e9;
+            display: flex;
+            gap: 12px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .message-input:focus {
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: #666;
+            text-align: center;
+        }
+
+        .welcome-screen h3 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 50vh;
+            }
+            
+            .chat-area {
+                height: 50vh;
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .error {
+            color: #f44336;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .success {
+            color: #4caf50;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="authScreen" class="auth-screen">
+        <div class="auth-card">
+            <h2>WebChat Connect</h2>
+            
+            <!-- Formulaire de connexion -->
+            <div id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" placeholder="votre@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Mot de passe</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••">
+                </div>
+                <button class="auth-btn" onclick="login()">Se connecter</button>
+                <div class="switch-auth" onclick="showRegister()">Créer un compte</div>
+                <div id="loginError" class="error"></div>
+            </div>
+
+            <!-- Formulaire d'inscription -->
+            <div id="registerForm" class="hidden">
+                <div class="form-group">
+                    <label for="registerName">Nom d'utilisateur</label>
+                    <input type="text" id="registerName" placeholder="Votre nom">
+                </div>
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" placeholder="votre@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Mot de passe</label>
+                    <input type="password" id="registerPassword" placeholder="••••••••">
+                </div>
+                <button class="auth-btn" onclick="register()">Créer le compte</button>
+                <div class="switch-auth" onclick="showLogin()">J'ai déjà un compte</div>
+                <div id="registerError" class="error"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interface principale -->
+    <div id="mainApp" class="container hidden">
+        <!-- Barre latérale -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="user-info" id="currentUser">Utilisateur</div>
+                <button class="logout-btn" onclick="logout()">Déconnexion</button>
+            </div>
+            
+            <!-- Section ajout d'utilisateur -->
+            <div class="add-user-section">
+                <div class="add-user-form">
+                    <input type="email" class="add-user-input" id="searchEmail" placeholder="Rechercher par email...">
+                    <button class="add-user-btn" onclick="searchUser()">🔍</button>
+                </div>
+                <div id="searchResults" class="search-results"></div>
+                <div id="searchMessage" class="success"></div>
+            </div>
+            
+            <div class="section-title">
+                <span>Mes contacts</span>
+            </div>
+            <div class="online-users" id="onlineUsers">
+                <!-- Les utilisateurs apparaîtront ici -->
+            </div>
+        </div>
+
+        <!-- Zone de chat -->
+        <div class="chat-area">
+            <div class="chat-header" id="chatHeader">
+                <div class="welcome-screen">
+                    <h3>Bienvenue sur WebChat Connect!</h3>
+                    <p>Ajoutez des contacts ou sélectionnez un utilisateur pour commencer à discuter</p>
+                </div>
+            </div>
+            
+            <div class="messages-container" id="messagesContainer">
+                <!-- Les messages apparaîtront ici -->
+            </div>
+
+            <div class="message-input-container" id="messageInputContainer" style="display: none;">
+                <input type="text" class="message-input" id="messageInput" placeholder="Tapez votre message...">
+                <button class="send-btn" onclick="sendMessage()">Envoyer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const API_URL = "https://webchat-connect.onrender.com";
+    const socket = io(API_URL);
+
+    let currentUser = null;
+    let selectedUser = null;
+    let messages = {};
+    let userContacts = []; // Liste des contacts de l'utilisateur
+
+    // Montre le formulaire d'inscription
+    function showRegister() {
+        document.getElementById('loginForm').classList.add('hidden');
+        document.getElementById('registerForm').classList.remove('hidden');
+    }
+
+    // Montre le formulaire de connexion
+    function showLogin() {
+        document.getElementById('registerForm').classList.add('hidden');
+        document.getElementById('loginForm').classList.remove('hidden');
+    }
+
+    async function register() {
+        console.log("Tentative d'inscription...");
+        const name = document.getElementById('registerName').value;
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
+
+        if (!name || !email || !password) {
+            showError('registerError', 'Veuillez remplir tous les champs');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password })
+            });
+
+            if (!res.ok) throw new Error("Inscription échouée");
+
+            currentUser = await res.json();
+            showMainApp();
+            connectToChat();
+        } catch (err) {
+            console.error(err);
+            showError('registerError', 'Email déjà utilisé ou erreur serveur');
+        }
+    }
+
+    async function login() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+
+        if (!email || !password) {
+            showError('loginError', 'Veuillez remplir tous les champs');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            if (!res.ok) throw new Error("Login échoué");
+
+            currentUser = await res.json();
+            showMainApp();
+            connectToChat();
+        } catch (err) {
+            showError('loginError', 'Email ou mot de passe incorrect');
+        }
+    }
+
+    function showMainApp() {
+        document.getElementById('authScreen').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
+        document.getElementById('currentUser').textContent = currentUser.name;
+        loadUserContacts();
+    }
+
+    // Nouvelle fonction pour chercher un utilisateur
+    async function searchUser() {
+        const email = document.getElementById('searchEmail').value.trim();
+        if (!email) {
+            showMessage('searchMessage', 'Veuillez entrer une adresse email', 'error');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/search-user`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, currentUserId: currentUser.id })
+            });
+
+            const data = await res.json();
+            
+            if (res.ok) {
+                displaySearchResults([data.user]);
+                showMessage('searchMessage', '', '');
+            } else {
+                showMessage('searchMessage', data.message || 'Utilisateur non trouvé', 'error');
+                document.getElementById('searchResults').style.display = 'none';
+            }
+        } catch (err) {
+            console.error(err);
+            showMessage('searchMessage', 'Erreur lors de la recherche', 'error');
+        }
+    }
+
+    function displaySearchResults(users) {
+        const container = document.getElementById('searchResults');
+        container.innerHTML = '';
+        
+        users.forEach(user => {
+            const div = document.createElement('div');
+            div.className = 'search-result-item';
+            div.innerHTML = `
+                <div>
+                    <div style="font-weight: 500;">${user.name}</div>
+                    <div style="font-size: 0.8rem; color: #666;">${user.email}</div>
+                </div>
+                <button class="add-contact-btn" onclick="addContact(${user.id}, '${user.name}', '${user.email}')">
+                    Ajouter
+                </button>
+            `;
+            container.appendChild(div);
+        });
+        
+        container.style.display = users.length > 0 ? 'block' : 'none';
+    }
+
+    // Fonction pour ajouter un contact
+    async function addContact(userId, userName, userEmail) {
+        try {
+            const res = await fetch(`${API_URL}/add-contact`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    userId: currentUser.id, 
+                    contactId: userId 
+                })
+            });
+
+            const data = await res.json();
+            
+            if (res.ok) {
+                showMessage('searchMessage', `${userName} ajouté à vos contacts!`, 'success');
+                document.getElementById('searchResults').style.display = 'none';
+                document.getElementById('searchEmail').value = '';
+                loadUserContacts(); // Recharger la liste des contacts
+            } else {
+                showMessage('searchMessage', data.message || 'Erreur lors de l\'ajout', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showMessage('searchMessage', 'Erreur lors de l\'ajout du contact', 'error');
+        }
+    }
+
+    // Charger les contacts de l'utilisateur
+    async function loadUserContacts() {
+        try {
+            const res = await fetch(`${API_URL}/user-contacts/${currentUser.id}`);
+            const contacts = await res.json();
+            userContacts = contacts;
+            updateContactsList();
+        } catch (err) {
+            console.error('Erreur lors du chargement des contacts:', err);
+        }
+    }
+
+    function updateContactsList() {
+        const container = document.getElementById('onlineUsers');
+        container.innerHTML = '';
+
+        if (userContacts.length === 0) {
+            container.innerHTML = '<div style="padding: 1rem; text-align: center; color: #666;">Aucun contact ajouté</div>';
+            return;
+        }
+
+        userContacts.forEach(contact => {
+            const userElement = document.createElement('div');
+            userElement.className = 'user-item';
+            const indicator = contact.online ? 'online-indicator' : 'offline-indicator';
+            userElement.innerHTML = `<div class="${indicator}"></div><div>${contact.name}</div>`;
+            userElement.onclick = (e) => {
+                selectUser(contact);
+                document.querySelectorAll('.user-item').forEach(item => item.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+            };
+            container.appendChild(userElement);
+        });
+    }
+
+    function connectToChat() {
+        socket.emit('user_connected', {
+            userId: currentUser.id,
+            userName: currentUser.name
+        });
+
+        socket.on('user_online', () => {
+            loadUserContacts(); // Actualiser les statuts en ligne
+        });
+        
+        socket.on('user_offline', () => {
+            loadUserContacts(); // Actualiser les statuts en ligne
+        });
+
+        socket.on('receive_message', (data) => {
+            const key = getChatKey(data.from, data.to);
+            if (!messages[key]) messages[key] = [];
+            messages[key].push(data);
+            if (selectedUser && (data.from === selectedUser.id || data.to === selectedUser.id)) {
+                displayMessages();
+            }
+        });
+    }
+
+    function selectUser(user) {
+        selectedUser = user;
+        document.getElementById('chatHeader').innerHTML = `<div style='font-weight: bold;'>Chat avec ${user.name}</div>`;
+        document.getElementById('messageInputContainer').style.display = 'flex';
+        displayMessages();
+    }
+
+    function getChatKey(id1, id2) {
+        return [id1, id2].sort().join('-');
+    }
+
+    function displayMessages() {
+        const container = document.getElementById('messagesContainer');
+        const key = getChatKey(currentUser.id, selectedUser.id);
+        container.innerHTML = '';
+        const msgs = messages[key] || [];
+
+        msgs.forEach(msg => {
+            const div = document.createElement('div');
+            div.className = `message ${msg.from === currentUser.id ? 'sent' : 'received'}`;
+            div.innerHTML = `<div>${msg.message}</div><div class="message-info">${new Date(msg.timestamp).toLocaleTimeString()}</div>`;
+            container.appendChild(div);
+        });
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const text = input.value.trim();
+        if (!text || !selectedUser) return;
+
+        socket.emit('send_message', {
+            from: currentUser.id,
+            to: selectedUser.id,
+            message: text
+        });
+
+        input.value = '';
+    }
+
+    function showError(id, msg) {
+        document.getElementById(id).textContent = msg;
+        document.getElementById(id).className = 'error';
+        setTimeout(() => document.getElementById(id).textContent = '', 3000);
+    }
+
+    function showMessage(id, msg, type) {
+        const element = document.getElementById(id);
+        element.textContent = msg;
+        element.className = type;
+        if (msg) {
+            setTimeout(() => element.textContent = '', 3000);
+        }
+    }
+
+    function logout() {
+        socket.disconnect();
+        currentUser = null;
+        selectedUser = null;
+        userContacts = [];
+        document.getElementById('authScreen').classList.remove('hidden');
+        document.getElementById('mainApp').classList.add('hidden');
+    }
+
+    // Permettre la recherche avec Enter
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('searchEmail').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchUser();
+            }
+        });
+        
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    });
+    </script>
+</body>
+</html>
